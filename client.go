@@ -7,6 +7,8 @@ import (
 	"log"
 )
 
+type Dgraph *dgo.Dgraph
+
 type CancelFunc func()
 
 // GetDgraphClient ใช้สำหรับการเชื่อมต่อฐานข้อมูล Dgraph ด้วย GRPC
