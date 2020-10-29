@@ -4,22 +4,22 @@ import (
 	"context"
 	"github.com/stretchr/testify/suite"
 	"testing"
-	"time"
 )
 
 type User struct {
-	Uid       string    `json:"uid,omitempty"`
-	DType     []string  `json:"dgraph.type,omitempty"`
-	CreatedAt time.Time `json:"created_at,omitempty" dgland:"string"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" dgland:"string"`
-	DeletedAt time.Time `json:"deleted_at,omitempty" dgland:"string"`
-	Username  string    `json:"username,omitempty" dgland:"string @index(exact) @upsert"`
-	Password  string    `json:"password,omitempty" dgland:"password"`
+	Model
+	Username string `json:"username,omitempty" dgland:"string @index(exact) @upsert"`
+	Password string `json:"password,omitempty" dgland:"password"`
+}
+
+type Post struct {
+	Model
+	Title       string `json:"title,omitempty" dgland:"string @index(exact) @upsert"`
+	Description string `json:"description,omitempty" dgland:"string"`
 }
 
 type UtilsTestSuite struct {
 	suite.Suite
-	UserModel    User
 	SchemaResult string
 }
 
@@ -27,16 +27,27 @@ func (suite *UtilsTestSuite) SetupTest() {
 	suite.SchemaResult = `created_at: string .
 updated_at: string .
 deleted_at: string .
-username: string @index(hash) @upsert .
+username: string @index(exact) @upsert .
 password: password .
+title: string @index(exact) @upsert .
+description: string .
 
 type User {
+	username
+	password
 	created_at
 	updated_at
 	deleted_at
-	username
-	password
-}`
+}
+
+type Post {
+	title
+	description
+	created_at
+	updated_at
+	deleted_at
+}
+`
 }
 
 func (suite *UtilsTestSuite) TestCtxFunc() {
@@ -44,7 +55,7 @@ func (suite *UtilsTestSuite) TestCtxFunc() {
 }
 
 func (suite *UtilsTestSuite) TestSchemaFunc() {
-	suite.Equal(suite.SchemaResult, Schema(suite.UserModel))
+	suite.Equal(suite.SchemaResult, Schema(&User{}, &Post{}))
 }
 
 func TestUtilsTestSuite(t *testing.T) {
