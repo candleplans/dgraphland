@@ -7,19 +7,21 @@ import (
 	"log"
 )
 
+var Client *dgo.Dgraph
+
 type CancelFunc func()
 
-// GetDgraphClient ใช้สำหรับการเชื่อมต่อฐานข้อมูล Dgraph ด้วย GRPC
-func GetDgraphClient(target string) (*dgo.Dgraph, CancelFunc) {
+// SetupClient ใช้สำหรับการเชื่อมต่อฐานข้อมูล Dgraph ด้วย GRPC
+func SetupClient(target string) CancelFunc {
 	conn, err := grpc.Dial(target, grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("While trying to dial gRPC: %v", err)
 	}
 
 	dc := api.NewDgraphClient(conn)
-	dg := dgo.NewDgraphClient(dc)
+	Client = dgo.NewDgraphClient(dc)
 
-	return dg, func() {
+	return func() {
 		if err := conn.Close(); err != nil {
 			log.Printf("Error while closing connection:%v", err)
 		}

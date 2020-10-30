@@ -18,7 +18,7 @@ func ctx() context.Context {
 	return context.Background()
 }
 
-func Schema(models ...interface{}) (string, error) {
+func Schema(models []interface{}) (string, error) {
 	// แทรก Model{} เป็นรายการแรกใน Models []interface{}
 	models = append([]interface{}{&Model{}}, models...)
 

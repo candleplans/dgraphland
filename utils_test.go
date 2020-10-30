@@ -69,27 +69,27 @@ func (suite *UtilsTestSuite) TestCtxFunc() {
 }
 
 func (suite *UtilsTestSuite) TestSchemaFunc() {
-	result, err := Schema(&User{}, &Post{})
+	result, err := Schema([]interface{}{&User{}, &Post{}})
 	suite.Nil(err)
 	suite.Equal(suite.SchemaResult, result)
 
-	result, err = Schema(&WrongStruct1{})
+	result, err = Schema([]interface{}{&WrongStruct1{}})
 	suite.Nil(err)
 	suite.Equal(result, "")
 
-	result, err = Schema(&WrongStruct2{})
+	result, err = Schema([]interface{}{&WrongStruct2{}})
 	suite.EqualError(err, errNoModelStruct("WrongStruct2").Error())
 	suite.Equal(result, "")
 
-	result, err = Schema(&User{}, &WrongStruct2{})
+	result, err = Schema([]interface{}{&User{}, &WrongStruct2{}})
 	suite.EqualError(err, errNoModelStruct("WrongStruct2").Error())
 	suite.Equal(result, "")
 
-	result, err = Schema(&WrongStruct3{})
+	result, err = Schema([]interface{}{&WrongStruct3{}})
 	suite.EqualError(err, errEmptyStruct("WrongStruct3").Error())
 	suite.Equal(result, "")
 
-	result, err = Schema(&User{}, &WrongStruct3{})
+	result, err = Schema([]interface{}{&User{}, &WrongStruct3{}})
 	suite.EqualError(err, errEmptyStruct("WrongStruct3").Error())
 	suite.Equal(result, "")
 }
