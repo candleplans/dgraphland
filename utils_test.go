@@ -78,11 +78,19 @@ func (suite *UtilsTestSuite) TestSchemaFunc() {
 	suite.Equal(result, "")
 
 	result, err = Schema(&WrongStruct2{})
-	suite.NotNil(err)
+	suite.EqualError(err, errNoModelStruct("WrongStruct2").Error())
+	suite.Equal(result, "")
+
+	result, err = Schema(&User{}, &WrongStruct2{})
+	suite.EqualError(err, errNoModelStruct("WrongStruct2").Error())
 	suite.Equal(result, "")
 
 	result, err = Schema(&WrongStruct3{})
-	suite.Nil(err)
+	suite.EqualError(err, errEmptyStruct("WrongStruct3").Error())
+	suite.Equal(result, "")
+
+	result, err = Schema(&User{}, &WrongStruct3{})
+	suite.EqualError(err, errEmptyStruct("WrongStruct3").Error())
 	suite.Equal(result, "")
 }
 

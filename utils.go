@@ -3,7 +3,6 @@ package dgraphland
 import (
 	"bytes"
 	"context"
-	"errors"
 	"reflect"
 	"strings"
 )
@@ -37,9 +36,10 @@ func Schema(models ...interface{}) (string, error) {
 
 		numFields := t.NumField()
 
-		// หากเป็น Type Structure ที่ไม่มี Field Structure ใดๆเลย ให้ข้าม
+		// หากเป็น Type Structure ที่ไม่มี Field Structure ใดๆเลย
+		// จะ return err
 		if numFields == 0 {
-			continue
+			return "", errEmptyStruct(typeName)
 		}
 
 		for i := 0; i < numFields; i++ {
@@ -47,7 +47,7 @@ func Schema(models ...interface{}) (string, error) {
 			tagDglangValue := field.Tag.Get(TagDgland)
 			tagJsonValue := field.Tag.Get(TagJson)
 
-			// หากเป็น Field ที่ไม่มี Json Tag และ Dglang Tag
+			// หากเป็น Structure ที่ไม่มี Field Json Tag และ Field  Dglang Tag เลย
 			// ให้ทำการข้ามรายการ Field Structure นั้นไปเลย
 			if tagDglangValue != "" && tagJsonValue != "" {
 				tagJsonFieldName := strings.Split(tagJsonValue, ",")[0]
@@ -58,28 +58,35 @@ func Schema(models ...interface{}) (string, error) {
 					if i == numFields-1 {
 						bModelTypes.WriteString("}\n")
 					}
-				} else if t.Field(0).Name == ModelTypeName {
+				} else
+				// หากมี Model Type ใน Type ปัจจุบัน
+				// ระบบจึงจะเริ่มดำเนินการแปลง Struct นั้นๆ เป็น Dgraph Schema
+				if t.Field(0).Name == ModelTypeName {
+					// สร้างส่วนหัวของ dgraph type
 					if i == 1 {
 						bTypes.WriteString("\ntype " + typeName + " {\n")
 					}
 
+					// นำ Field ของ Struct มาเขียน Dgraph Field Type ลง bTypes
 					bTypes.WriteString("\t" + tagJsonFieldName + "\n")
 
+					// เมื่อถึง Field สุดท้าย ให้นำ bModelTypes มาต่อท้าย bTypes ในแต่ละ Type ของ Dgraph Schema
 					if i == numFields-1 {
 						bTypes.WriteString(bModelTypes.String())
 					}
 				} else {
-					return "", errors.New("Error : " + typeName +
-						" Type -> This structure does not have The " +
-						typeName + " nested structure at first field.")
+					// หากเป็น Type Structure ที่ไม่มี Model Type ใน Type Structure ปัจจุบัน
+					// จะ return err
+					return "", errNoModelStruct(typeName)
 				}
 			}
 		}
 	}
 
-	if bTypes.String() != "" {
-		return bFields.String() + bTypes.String(), nil
-	} else {
+	// ถ้าหาก bTypes หรือ Dgraph Type ไม่มี ก็จะ return ""
+	if bTypes.String() == "" {
 		return "", nil
+	} else {
+		return bFields.String() + bTypes.String(), nil
 	}
 }
