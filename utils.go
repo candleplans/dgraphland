@@ -3,6 +3,7 @@ package dgraphland
 import (
 	"bytes"
 	"context"
+	"errors"
 	"reflect"
 	"strings"
 )
@@ -18,7 +19,7 @@ func ctx() context.Context {
 	return context.Background()
 }
 
-func Schema(models ...interface{}) string {
+func Schema(models ...interface{}) (string, error) {
 	// แทรก Model{} เป็นรายการแรกใน Models []interface{}
 	models = append([]interface{}{&Model{}}, models...)
 
@@ -34,41 +35,51 @@ func Schema(models ...interface{}) string {
 
 		typeName := t.Name()
 
-		if t.Name() == ModelTypeName {
+		numFields := t.NumField()
+
+		// หากเป็น Type Structure ที่ไม่มี Field Structure ใดๆเลย ให้ข้าม
+		if numFields == 0 {
 			continue
 		}
 
-		numFields := t.NumField()
-
 		for i := 0; i < numFields; i++ {
 			field := t.Field(i)
-			tagValueDglang := field.Tag.Get(TagDgland)
-			tagValueJson := field.Tag.Get(TagJson)
+			tagDglangValue := field.Tag.Get(TagDgland)
+			tagJsonValue := field.Tag.Get(TagJson)
 
-			// หากเป็น Field ที่ไม่มี Json Tag หรือ Dglang Tag
-			//ให้ทำการข้ามรายการ Model Struct นั้นไปเลย
-			if tagValueDglang != "" && tagValueJson != "" {
-				fieldName := strings.Split(tagValueJson, ",")[0]
-				bFields.WriteString(fieldName + ": " + tagValueDglang + " .\n")
+			// หากเป็น Field ที่ไม่มี Json Tag และ Dglang Tag
+			// ให้ทำการข้ามรายการ Field Structure นั้นไปเลย
+			if tagDglangValue != "" && tagJsonValue != "" {
+				tagJsonFieldName := strings.Split(tagJsonValue, ",")[0]
+				bFields.WriteString(tagJsonFieldName + ": " + tagDglangValue + " .\n")
 
 				if typeName == ModelTypeName {
-					bModelTypes.WriteString("\t" + fieldName + "\n")
+					bModelTypes.WriteString("\t" + tagJsonFieldName + "\n")
 					if i == numFields-1 {
 						bModelTypes.WriteString("}\n")
 					}
-				} else {
+				} else if t.Field(0).Name == ModelTypeName {
 					if i == 1 {
 						bTypes.WriteString("\ntype " + typeName + " {\n")
 					}
 
-					bTypes.WriteString("\t" + fieldName + "\n")
+					bTypes.WriteString("\t" + tagJsonFieldName + "\n")
 
 					if i == numFields-1 {
 						bTypes.WriteString(bModelTypes.String())
 					}
+				} else {
+					return "", errors.New("Error : " + typeName +
+						" Type -> This structure does not have The " +
+						typeName + " nested structure at first field.")
 				}
 			}
 		}
 	}
-	return bFields.String() + bTypes.String()
+
+	if bTypes.String() != "" {
+		return bFields.String() + bTypes.String(), nil
+	} else {
+		return "", nil
+	}
 }

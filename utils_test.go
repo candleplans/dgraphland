@@ -18,6 +18,20 @@ type Post struct {
 	Description string `json:"description,omitempty" dgland:"string"`
 }
 
+// WrongStruct1 มี Model Nested Structure แต่ไม่มี field ที่มี Json Tag และ Dglang Tag เลย
+type WrongStruct1 struct {
+	Model
+}
+
+// WrongStruct2 ไม่มี Model Nested Structure
+type WrongStruct2 struct {
+	Title       string `json:"title,omitempty" dgland:"string @index(exact) @upsert"`
+	Description string `json:"description,omitempty" dgland:"string"`
+}
+
+// WrongStruct3 ไม่มี Field Structure ใดๆเลย
+type WrongStruct3 struct{}
+
 type UtilsTestSuite struct {
 	suite.Suite
 	SchemaResult string
@@ -55,7 +69,21 @@ func (suite *UtilsTestSuite) TestCtxFunc() {
 }
 
 func (suite *UtilsTestSuite) TestSchemaFunc() {
-	suite.Equal(suite.SchemaResult, Schema(&User{}, &Post{}))
+	result, err := Schema(&User{}, &Post{})
+	suite.Nil(err)
+	suite.Equal(suite.SchemaResult, result)
+
+	result, err = Schema(&WrongStruct1{})
+	suite.Nil(err)
+	suite.Equal(result, "")
+
+	result, err = Schema(&WrongStruct2{})
+	suite.NotNil(err)
+	suite.Equal(result, "")
+
+	result, err = Schema(&WrongStruct3{})
+	suite.Nil(err)
+	suite.Equal(result, "")
 }
 
 func TestUtilsTestSuite(t *testing.T) {
